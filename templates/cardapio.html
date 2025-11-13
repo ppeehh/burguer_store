@@ -5,6 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cardápio - Burguer Store</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+/* Botão carrinho no topo */
+#btn-carrinho {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background: #ff6600;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+/* Número de itens no carrinho */
+#btn-carrinho span {
+    background: #fff;
+    color: #ff6600;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.9rem;
+    margin-left: 6px;
+}
+
+/* Modal */
+.modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 200; }
+.modal.ativo { display: flex; }
+.modal-content { background: #1e1e1e; padding: 16px; border-radius: 10px; width: 90%; max-width: 400px; color: #fff; border: 2px solid #ff6600; }
+.modal-content ul { list-style:none; padding:0; margin:0 0 12px 0; max-height: 300px; overflow:auto; }
+.modal-content li { padding:8px 6px; border-bottom: 1px solid rgba(255,255,255,0.1); display:flex; flex-direction: column; }
+.modal-content input.observacao { margin-top: 4px; padding:4px 6px; border-radius:4px; border:none; width:100%; }
+.modal-content .remover { background:#333; color:#fff; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; margin-top:4px; }
+
+.modal-btn { background:#ff6600; color:#fff; border:none; padding:10px; border-radius:8px; cursor:pointer; width:100%; margin-top:10px; }
+
+select { padding:4px; margin-bottom: 6px; border-radius:4px; border:none; display:block; }
+</style>
 </head>
 <body>
 <header>
@@ -22,11 +61,32 @@
             {% endif %}
             <h3>{{ p['nome'] }}</h3>
             <p class="preco">R$ {{ '%.2f'|format(p['preco']) }}</p>
+            
+            <!-- Selecionar quantidade -->
+            <select class="quantidade" data-nome="{{ p['nome'] }}" data-preco="{{ p['preco'] }}">
+                {% for i in range(1,11) %}
+                    <option value="{{ i }}">{{ i }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn-add" data-nome="{{ p['nome'] }}" data-preco="{{ p['preco'] }}">Adicionar ao carrinho</button>
         </div>
     {% endfor %}
     </div>
 {% endfor %}
 </main>
+
+<button id="btn-carrinho">🛒 Carrinho <span id="quantidade-itens">0</span></button>
+
+<!-- Modal do carrinho -->
+<div class="modal" id="modal-carrinho">
+    <div class="modal-content">
+        <h2>Seu Carrinho</h2>
+        <ul id="lista-carrinho"></ul>
+        <p><strong>Total: R$ <span id="total">0.00</span></strong></p>
+        <button class="modal-btn" id="btn-confirmar">Confirmar Pedido</button>
+        <button class="modal-btn" id="btn-continuar">Continuar Comprando</button>
+    </div>
+</div>
 
 <script>
 let clickCount = 0;
@@ -35,6 +95,84 @@ document.getElementById('titulo').addEventListener('click', () => {
     if(clickCount === 3){
         window.location.href = '/admin123';
     }
+});
+
+const btnCarrinho = document.getElementById('btn-carrinho');
+const modal = document.getElementById('modal-carrinho');
+const btnContinuar = document.getElementById('btn-continuar');
+const listaCarrinho = document.getElementById('lista-carrinho');
+const btnConfirmar = document.getElementById('btn-confirmar');
+const quantidadeItens = document.getElementById('quantidade-itens');
+
+let carrinho = [];
+
+// Adicionar ao carrinho
+document.querySelectorAll('.btn-add').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const nome = btn.dataset.nome;
+        const preco = parseFloat(btn.dataset.preco);
+        const select = btn.previousElementSibling;
+        const quantidade = parseInt(select.value);
+        for(let i=0;i<quantidade;i++){
+            carrinho.push({nome, preco, observacao:''});
+        }
+        // Atualiza número de itens no botão
+        quantidadeItens.innerText = carrinho.length;
+    });
+});
+
+function atualizarCarrinho() {
+    listaCarrinho.innerHTML = '';
+    let total = 0;
+    carrinho.forEach((item, i) => {
+        total += item.preco;
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <strong>${item.nome}</strong> - R$ ${item.preco.toFixed(2)}
+            <input type="text" class="observacao" placeholder="Observações (ex: sem cebola, sem gelo)" value="${item.observacao}" data-index="${i}">
+            <button class="remover" data-index="${i}">🗑️ Remover</button>
+        `;
+        listaCarrinho.appendChild(li);
+    });
+    document.getElementById('total').innerText = total.toFixed(2);
+    quantidadeItens.innerText = carrinho.length;
+
+    // Remover item
+    document.querySelectorAll('.remover').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const i = parseInt(btn.dataset.index);
+            carrinho.splice(i,1);
+            atualizarCarrinho();
+        });
+    });
+
+    // Atualizar observação
+    document.querySelectorAll('.observacao').forEach(input => {
+        input.addEventListener('input', () => {
+            const i = parseInt(input.dataset.index);
+            carrinho[i].observacao = input.value;
+        });
+    });
+}
+
+btnCarrinho.addEventListener('click', ()=> {
+    atualizarCarrinho();
+    modal.classList.add('ativo');
+});
+btnContinuar.addEventListener('click', ()=> modal.classList.remove('ativo'));
+
+btnConfirmar.addEventListener('click', ()=>{
+    if(carrinho.length === 0) { alert("Seu carrinho está vazio!"); return; }
+    let mensagem = 'Olá! Gostaria de fazer o pedido:\n';
+    carrinho.forEach(item=>{
+        mensagem += `- ${item.nome}`;
+        if(item.observacao) mensagem += ` (${item.observacao})`;
+        mensagem += ` - R$ ${item.preco.toFixed(2)}\n`;
+    });
+    const total = carrinho.reduce((sum,i)=>sum+i.preco,0);
+    mensagem += `Total: R$ ${total.toFixed(2)}`;
+    const url = `https://wa.me/SEU_NUMERO_AQUI?text=${encodeURIComponent(mensagem)}`;
+    window.open(url,'_blank');
 });
 </script>
 </body>
