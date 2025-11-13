@@ -6,6 +6,14 @@
 <title>Cardápio - Burguer Store</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <style>
+/* Imagem de fundo */
+body {
+    background-image: url("{{ url_for('static', filename='fundo.jpg') }}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
 /* Botão carrinho no topo */
 #btn-carrinho {
     position: fixed;
@@ -43,6 +51,12 @@
 .modal-btn { background:#ff6600; color:#fff; border:none; padding:10px; border-radius:8px; cursor:pointer; width:100%; margin-top:10px; }
 
 select { padding:4px; margin-bottom: 6px; border-radius:4px; border:none; display:block; }
+
+/* Títulos das categorias em branco */
+h2 {
+    color: white;
+    text-shadow: 1px 1px 2px #000;
+}
 </style>
 </head>
 <body>
