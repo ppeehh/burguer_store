@@ -27,9 +27,7 @@ h1 { margin: 0; font-size: 1.2rem; }
 h2 { padding-left: 12px; color: #ff6600; }
 .preco { color: #fff; margin: 8px 0; font-weight: 600; }
 
-.btn-add {
-  background-color: #ff6600; color: #fff; border: none; padding: 8px 10px; border-radius: 6px; cursor: pointer; width: 100%;
-}
+.btn-add { background-color: #ff6600; color: #fff; border: none; padding: 8px 10px; border-radius: 6px; cursor: pointer; width: 100%; }
 .btn-add:hover { background: #ff8533; }
 
 /* modal */
