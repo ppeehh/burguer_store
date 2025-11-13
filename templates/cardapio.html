@@ -1,23 +1,156 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Cardápio</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Burguer Store - Cardápio</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h2>Cardápio</h2>
-    <form action="/adicionar" method="POST">
-        <ul>
-            {% for p in produtos %}
-            <li>
-                {{ p.nome }} - R${{ "%.2f"|format(p.preco) }}
-                <input type="hidden" name="produto" value="{{ p.nome }}">
-                <input type="hidden" name="preco" value="{{ p.preco }}">
-                <button type="submit">Adicionar</button>
-            </li>
-            {% endfor %}
-        </ul>
-    </form>
-    <a href="/confirmar">Ver carrinho</a>
+  <header>
+    <h1>🍔 Burguer Store</h1>
+    <button id="btn-carrinho">🛒 Carrinho (<span id="contador">0</span>)</button>
+  </header>
+
+  <main>
+    <section class="categoria">
+      <h2>🍔 Lanches</h2>
+      <div class="grid">
+        {% for item in produtos['Lanches'] %}
+        <div class="card">
+          {% if item.imagem %}
+            <img src="{{ url_for('static', filename='imagens/' ~ item.imagem) }}" alt="{{ item.nome }}">
+          {% endif %}
+          <h3>{{ item.nome }}</h3>
+          {% if item.descricao %}<p class="desc">{{ item.descricao }}</p>{% endif %}
+          <p class="preco">R$ {{ '%.2f'|format(item.preco) }}</p>
+
+          <button class="btn-add"
+                  data-nome="{{ item.nome }}"
+                  data-preco="{{ '%.2f'|format(item.preco) }}">
+            Adicionar
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="categoria">
+      <h2>🥤 Bebidas</h2>
+      <div class="grid">
+        {% for item in produtos['Bebidas'] %}
+        <div class="card">
+          {% if item.imagem %}
+            <img src="{{ url_for('static', filename='imagens/' ~ item.imagem) }}" alt="{{ item.nome }}">
+          {% endif %}
+          <h3>{{ item.nome }}</h3>
+          {% if item.descricao %}<p class="desc">{{ item.descricao }}</p>{% endif %}
+          <p class="preco">R$ {{ '%.2f'|format(item.preco) }}</p>
+
+          <button class="btn-add"
+                  data-nome="{{ item.nome }}"
+                  data-preco="{{ '%.2f'|format(item.preco) }}">
+            Adicionar
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal do carrinho -->
+  <div id="modal-carrinho" class="modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true">
+      <h2>🛍️ Seu Carrinho</h2>
+
+      <ul id="itens-carrinho"></ul>
+
+      <p><strong>Total:</strong> R$ <span id="total-carrinho">0.00</span></p>
+
+      <div style="display:flex;gap:10px;flex-direction:column;">
+        <button id="btn-enviar" class="modal-btn">📱 Confirmar e Enviar ao WhatsApp</button>
+        <button id="btn-fechar" class="modal-btn-secondary">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Lógica do carrinho (front-end) ---
+    const carrinho = [];
+
+    function parsePreco(precoStr) {
+      return Number(String(precoStr).replace(',', '.'));
+    }
+
+    function adicionarCarrinho(nome, preco) {
+      const p = parsePreco(preco);
+      carrinho.push({ nome: String(nome), preco: p });
+      document.getElementById('contador').textContent = carrinho.length;
+    }
+
+    function atualizarModal() {
+      const lista = document.getElementById('itens-carrinho');
+      const totalSpan = document.getElementById('total-carrinho');
+      lista.innerHTML = '';
+      let total = 0;
+      carrinho.forEach((item, idx) => {
+        total += item.preco;
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${item.nome}</span>
+          <span style="float:right">R$ ${item.preco.toFixed(2)}</span>
+          <button class="remover" data-idx="${idx}" style="display:block;margin-top:6px">Remover</button>
+        `;
+        lista.appendChild(li);
+      });
+      totalSpan.textContent = total.toFixed(2);
+
+      // remover handlers
+      document.querySelectorAll('#itens-carrinho .remover').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = Number(btn.dataset.idx);
+          if (!Number.isNaN(i)) { carrinho.splice(i,1); document.getElementById('contador').textContent = carrinho.length; atualizarModal(); }
+        });
+      });
+    }
+
+    function abrirModal() {
+      document.getElementById('modal-carrinho').classList.add('ativo');
+      document.getElementById('modal-carrinho').setAttribute('aria-hidden','false');
+      atualizarModal();
+    }
+    function fecharModal() {
+      document.getElementById('modal-carrinho').classList.remove('ativo');
+      document.getElementById('modal-carrinho').setAttribute('aria-hidden','true');
+    }
+
+    function enviarWhatsApp() {
+      if (carrinho.length === 0) { alert('Seu carrinho está vazio!'); return; }
+      let mensagem = '🍔 *Pedido Burguer Store*%0A%0A';
+      let total = 0;
+      carrinho.forEach(item => { mensagem += `• ${encodeURIComponent(item.nome)} - R$ ${item.preco.toFixed(2)}%0A`; total += item.preco; });
+      mensagem += `%0ATotal: R$ ${total.toFixed(2)}%0A%0A📍 Envie seu endereço:`;
+      const numero = '5511999999999'; // substitua pelo número real
+      const url = `https://wa.me/${numero}?text=${mensagem}`;
+      window.open(url, '_blank');
+    }
+
+    // quando DOM pronto: ligar botões
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.btn-add').forEach(btn => {
+        btn.addEventListener('click', () => {
+          adicionarCarrinho(btn.dataset.nome, btn.dataset.preco);
+        });
+      });
+      document.getElementById('btn-carrinho').addEventListener('click', abrirModal);
+      document.getElementById('btn-fechar').addEventListener('click', fecharModal);
+      document.getElementById('btn-enviar').addEventListener('click', enviarWhatsApp);
+
+      // fechar modal ao clicar fora
+      document.getElementById('modal-carrinho').addEventListener('click', (e) => {
+        if (e.target.id === 'modal-carrinho') fecharModal();
+      });
+    });
+  </script>
 </body>
 </html>
