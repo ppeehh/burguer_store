@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmar Pedido</title>
+</head>
+<body>
+    <h2>Confirme seu pedido</h2>
+    <ul>
+        {% for item in carrinho %}
+        <li>{{ item.produto }} - R${{ "%.2f"|format(item.preco) }}</li>
+        {% endfor %}
+    </ul>
+    <p><strong>Total:</strong> R${{ "%.2f"|format(total) }}</p>
+
+    <form action="/enviar_pedido" method="POST">
+        <input type="text" name="nome" placeholder="Seu nome" required><br><br>
+        <input type="text" name="endereco" placeholder="Seu endereço" required><br><br>
+        <button type="submit">Enviar pedido pelo WhatsApp</button>
+    </form>
+</body>
+</html>

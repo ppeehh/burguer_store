@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Cardápio</title>
+</head>
+<body>
+    <h2>Cardápio</h2>
+    <form action="/adicionar" method="POST">
+        <ul>
+            {% for p in produtos %}
+            <li>
+                {{ p.nome }} - R${{ "%.2f"|format(p.preco) }}
+                <input type="hidden" name="produto" value="{{ p.nome }}">
+                <input type="hidden" name="preco" value="{{ p.preco }}">
+                <button type="submit">Adicionar</button>
+            </li>
+            {% endfor %}
+        </ul>
+    </form>
+    <a href="/confirmar">Ver carrinho</a>
+</body>
+</html>
